@@ -3,7 +3,6 @@
   const fs = require('fs');
   const http = require('http');
   const repl = require('repl');
-  const EventEmitter = require('events');
   const express = require('express');
   const websocketStream = require('websocket-stream');
 
@@ -19,7 +18,17 @@
         stream.isRaw = mode;
       };
       const instance = repl.start(Object.assign({ input: stream, output: stream }, options.repl || {}));
-      stream.on('close', instance.close);
+      let closed = false;
+      stream.on('close', () => {
+        if(closed) return;
+        closed = true;
+        instance.close();
+      });
+      instance.on('close', () => {
+        if(closed) return;
+        closed = true;
+        stream.end();
+      });
     });
     app.use(express.static('static'));
     server.listen(options.port || 9999);
