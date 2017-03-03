@@ -1,6 +1,6 @@
 {
   "name": "replio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Replio - An experiment of running Node.Js REPL over websocket with Chromium's hterm.",
   "main": "index.js",
   "scripts": {
