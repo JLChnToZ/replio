@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>REPL over Sockets</title>
+<meta charset='utf-8' />
+</head>
+<body>
+<div id='terminal'></div>
+<style>
+html, body {
+  width: 100%;
+  height: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+#terminal {
+  position: relative;
+  width:100%;
+  height:100%;
+}
+</style>
+<script src='/hterm/hterm_all.js'></script>
+<script>
+hterm.defaultStorage = new lib.Storage.Local();
+var terminal = new hterm.Terminal('default');
+terminal.onTerminalReady = function() {
+  var io = terminal.io.push();
+  var ws = new WebSocket('ws://' + location.hostname + ':' + location.port + '/');
+  ws.onmessage = function(e) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      io.print(reader.result.replace(/\r|\n/g, '\r\n'));
+    };
+    reader.readAsBinaryString(e.data);
+  };
+  ws.onclose = function() {};
+  io.onVTKeystroke = function(ks) {
+    ws.send(new Blob([ks]));
+  };
+  io.sendString = function(str) {
+    ws.send(new Blob([str]));
+  };
+  io.onTerminalResize = function(columns, rows) { };
+  terminal.installKeyboard();
+};
+terminal.decorate(document.getElementById('terminal'));
+</script>
+</body>
+</html>
