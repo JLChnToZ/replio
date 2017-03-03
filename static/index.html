@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>REPL over Sockets</title>
+<title>Replio - Node.js REPL over Websocket</title>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=false" />
 </head>
 <body>
 <div id="terminal"></div>
@@ -20,19 +21,19 @@ html, body {
   height: 100%;
 }
 </style>
-<script src="/hterm/hterm_all.js"></script>
+<script src="/hterm/hterm_all.min.js"></script>
 <script>
-hterm.defaultStorage = new lib.Storage.Local();
+hterm.defaultStorage = new lib.Storage.Memory();
 var terminal = new hterm.Terminal('default');
 terminal.onTerminalReady = function() {
   var io = terminal.io.push();
-  var ws = new WebSocket('ws://' + location.hostname + ':' + location.port + '/');
+  var ws = new WebSocket((location.protocol === 'https' ? 'wss' : 'ws') + '://' + location.hostname + ':' + location.port + '/');
   ws.onmessage = function(e) {
     var reader = new FileReader();
     reader.onload = function() {
       io.print(reader.result.replace(/\r|\n/g, '\r\n'));
     };
-    reader.readAsBinaryString(e.data);
+    reader.readAsText(e.data);
   };
   ws.onclose = function() {
     io.sendString = io.onVTKeystroke = function() {};
@@ -44,8 +45,16 @@ terminal.onTerminalReady = function() {
   io.sendString = function(str) {
     ws.send(new Blob([str]));
   };
-  io.onTerminalResize = function(columns, rows) { };
   terminal.installKeyboard();
+  
+  var prefs = terminal.getPrefs();
+  prefs.set('cursor-color', '#FFC');
+  prefs.set('cursor-blink', true);
+  prefs.set('font-size', 14);
+  prefs.set('color-palette-overrides', [
+    "#444", "#F40", "#CF0", "#FC0", "#0CF", "#C0F", "#0CF", "#EEE",
+    "#888", "#F44", "#0FC", "#FFC", "#44F", "#F8F", "#8CF", "#FFF"
+  ]);
 };
 terminal.decorate(document.getElementById('terminal'));
 </script>
