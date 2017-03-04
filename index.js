@@ -1,43 +1,57 @@
-(function() {
-  'use strict';
-  const fs = require('fs');
-  const http = require('http');
-  const repl = require('repl');
-  const express = require('express');
-  const websocketStream = require('websocket-stream');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const url = require('url');
+const Repl = require('repl');
+const MemoryStream = require('memorystream');
 
-  function run(options) {
-    options = options || {};
-    const app = express();
-    const server = http.createServer(app);
-    websocketStream.createServer(Object.assign({ server, path: '/' }, options.ws || {}), (stream) => {
-      // Tell a lie to readable: let it treat the stream as TTY.
-      stream.isTTY = true;
-      stream.isRaw = true;
-      stream.setRawMode = (mode) => {
-        stream.isRaw = mode;
-      };
-      const instance = repl.start(Object.assign({ input: stream, output: stream }, options.repl || {}));
-      let closed = false;
-      stream.on('close', () => {
-        if(closed) return;
-        closed = true;
-        instance.close();
-      });
-      instance.on('close', () => {
-        if(closed) return;
-        closed = true;
-        stream.end();
-      });
-    });
-    app.use(express.static('static'));
-    server.listen(options.port || 9999);
-  };
+let win, repl;
 
-  if(require.main === module) {
-    const configPath = './config.json';
-    run(fs.existsSync(configPath) && JSON.parse(fs.readFileSync(configPath, 'utf8')));
-  } else {
-    module.exports = run;
-  }
-})();
+const input = new MemoryStream(), output = new MemoryStream();
+// Tell the repl that these streams are raw TTY as hterm is handling these.
+input.isTTY = input.isRaw = output.isTTY = output.isRaw = true;
+
+app.on('ready', () => {
+  win = new BrowserWindow({ width: 800, height: 600 });
+  
+  win.setMenu(null);
+  
+  ipcMain.on('terminal-ready', initIPC);
+
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, './static/index.html'),
+    protocol: 'file:',
+    slashes: true
+  }));
+
+  win.on('closed', () => {
+    win = null;
+    if(repl) repl.close();
+  });
+});
+
+function initIPC() {
+  ipcMain.on('input', (e, a) => {
+    input.write(Buffer.from(a, 'utf8'));
+  });
+
+  output.on('readable', () => {
+    win.webContents.send('output', output.read().toString('utf8').replace(/\r\n|\r|\n/g, '\r\n'));
+  });
+  
+  repl = Repl
+  .start({ input, output })
+  .on('close', () => {
+    repl = null;
+    if(win) win.close();
+  });
+}
+
+app.on('window-all-closed', () => {
+  if(process.platform !== 'darwin')
+    app.quit();
+})
+
+app.on('activate', () => {
+  if(win === null)
+    createWindow();
+});

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Replio - Node.js REPL over Websocket</title>
+<title>Replio Standalone - Electron (Node.js) REPL</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=false" />
 </head>
@@ -21,33 +21,22 @@ html, body {
   height: 100%;
 }
 </style>
-<script src="/hterm/hterm_all.min.js"></script>
+<script src="hterm/hterm_all.js"></script>
 <script>
+const { ipcRenderer } = require('electron');
+
 hterm.defaultStorage = new lib.Storage.Memory();
-var terminal = new hterm.Terminal('default');
-terminal.onTerminalReady = function() {
-  var io = terminal.io.push();
-  var ws = new WebSocket((location.protocol === 'https' ? 'wss' : 'ws') + '://' + location.hostname + ':' + location.port + '/');
-  ws.onmessage = function(e) {
-    var reader = new FileReader();
-    reader.onload = function() {
-      io.print(reader.result.replace(/\r\n|\r|\n/g, '\r\n'));
-    };
-    reader.readAsText(e.data);
-  };
-  ws.onclose = function() {
-    io.sendString = io.onVTKeystroke = function() {};
-    window.close();
-  };
-  io.onVTKeystroke = function(ks) {
-    ws.send(new Blob([ks]));
-  };
-  io.sendString = function(str) {
-    ws.send(new Blob([str]));
-  };
+const terminal = new hterm.Terminal('default');
+
+terminal.onTerminalReady = () => {
+  const io = terminal.io.push();
+  ipcRenderer.on('output', (e, data) => io.print(data));
+  io.onVTKeystroke = io.sendString = (str) =>
+    ipcRenderer.send('input', str);
+  ipcRenderer.send('terminal-ready');
   terminal.installKeyboard();
   
-  var prefs = terminal.getPrefs();
+  const prefs = terminal.getPrefs();
   prefs.set('cursor-color', '#FFC');
   prefs.set('cursor-blink', true);
   prefs.set('font-size', 14);
