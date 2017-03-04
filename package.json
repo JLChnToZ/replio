@@ -4,7 +4,7 @@
   "description": "Replio.Standalone - An experiment of running Electron (Node.js) REPL with hterm.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron ."
   },
   "keywords": [
     "repl",
@@ -15,5 +15,7 @@
   "dependencies": {
     "memorystream": "^0.3.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "electron": "^1.4.1"
+  }
 }
