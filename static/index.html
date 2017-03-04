@@ -31,7 +31,7 @@ terminal.onTerminalReady = function() {
   ws.onmessage = function(e) {
     var reader = new FileReader();
     reader.onload = function() {
-      io.print(reader.result.replace(/\r|\n/g, '\r\n'));
+      io.print(reader.result.replace(/\r\n|\r|\n/g, '\r\n'));
     };
     reader.readAsText(e.data);
   };
