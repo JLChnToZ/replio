@@ -3,11 +3,8 @@
 <head>
 <title>Replio Standalone - Electron (Node.js) REPL</title>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=false" />
-</head>
-<body>
-<div id="terminal"></div>
-<style>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
+<style type="text/css">
 html, body {
   width: 100%;
   height: 100%;
@@ -15,37 +12,54 @@ html, body {
   margin: 0;
   padding: 0;
 }
-#terminal {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
 </style>
-<script src="hterm/hterm_all.js"></script>
-<script>
-const { ipcRenderer } = require('electron');
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', () => {
+  const { hterm, lib } = require('hterm-umdjs');
 
-hterm.defaultStorage = new lib.Storage.Memory();
-const terminal = new hterm.Terminal('default');
+  // Initialize the terminal
+  hterm.defaultStorage = new lib.Storage.Local();
+  const terminal = new hterm.Terminal('default');
 
-terminal.onTerminalReady = () => {
+  terminal.onTerminalReady =
+    EventTarget.prototype.dispatchEvent.bind(
+      document, new CustomEvent('terminalready', {
+        detail: { terminal }
+      })
+    );
+
+  // Apply the teminal to DOM
+  terminal.decorate(document.body);
+
+  // Expose for debugging
+  window.terminal = terminal;
+});
+document.addEventListener('terminalready', (e) => {
+  const { ipcRenderer } = require('electron');
+  const { terminal } = e.detail;
   const io = terminal.io.push();
+
+  // Map terminal IO to IPC channel
   ipcRenderer.on('output', (e, data) => io.print(data));
-  io.onVTKeystroke = io.sendString = (str) =>
-    ipcRenderer.send('input', str);
+  io.onVTKeystroke = io.sendString =
+    ipcRenderer.send.bind(null, 'input');
   ipcRenderer.send('terminal-ready');
+
   terminal.installKeyboard();
-  
+
+  // Decorate the terminal
   const prefs = terminal.getPrefs();
-  prefs.set('cursor-color', '#FFC');
+  prefs.set('cursor-color', '#0F8');
   prefs.set('cursor-blink', true);
+  prefs.set('cursor-blink-cycle', [40, 40]);
   prefs.set('font-size', 14);
   prefs.set('color-palette-overrides', [
-    "#444", "#F40", "#CF0", "#FC0", "#0CF", "#C0F", "#0CF", "#EEE",
-    "#888", "#F44", "#0FC", "#FFC", "#44F", "#F8F", "#8CF", "#FFF"
+    '#111', '#08F', '#0F4', '#0F8',
+    '#F40', '#80F', '#FC0', '#CCC',
+    '#888', '#44F', '#8F0', '#4FC',
+    '#F04', '#F8C', '#FF8', '#FFF'
   ]);
-};
-terminal.decorate(document.getElementById('terminal'));
+});
 </script>
-</body>
+</head>
 </html>

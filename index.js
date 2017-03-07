@@ -46,6 +46,8 @@ function createWindow() {
 ipcMain.on('terminal-ready', (e) => {
   const instance = instances[e.sender.id];
   if(!instance) return;
+  instance.output.write('\x1b[36;01mReplio Standalone\x1b[0m - An experimental REPL shell for Node.js/Electron\n', 'utf8');
+  instance.output.write('Type `.help` for list of available commands\n\n', 'utf8');
   instance.repl = Repl.start({
     input: instance.input,
     output: instance.output
@@ -57,8 +59,16 @@ ipcMain.on('terminal-ready', (e) => {
   instance.repl.defineCommand('spawn', {
     help: 'Spawn a new REPL instance',
     action() {
+      instance.output.write('Spawning new instance...\n\n', 'utf8');
       createWindow();
-      instance.output.write('Spawning new instance...\n', 'utf8');
+      this.displayPrompt();
+    }
+  });
+  instance.repl.defineCommand('devtools', {
+    help: 'Open developer tools for current window',
+    action(mode) {
+      instance.output.write('Opening developer tools...\n\n', 'utf8');
+      instance.win.webContents.openDevTools({ mode });
       this.displayPrompt();
     }
   });
