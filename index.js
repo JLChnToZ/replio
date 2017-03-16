@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const net = require('net');
 const path = require('path');
 const url = require('url');
 const Repl = require('repl');
@@ -39,6 +40,30 @@ function createWindow() {
   });
 }
 
+function connectTelnet(host, port, instance) {
+  const telnet = net.connect(port, host);
+  const input = instance.input;
+  telnet.on('connect', () => {
+    instance.input = telnet;
+    telnet.pipe(instance.output, { end: false });
+  });
+  telnet.on('error', (err) => {
+    instance.output.write(`\nError: ${err.stack || err}\n\n`, 'utf8');
+    instance.input = input;
+    delete instance.onClose;
+    this.displayPrompt();
+  });
+  telnet.on('close', () => {
+    instance.input = input;
+    delete instance.onClose;
+    this.displayPrompt();
+  });
+  instance.onClose = () => {
+    telnet.close();
+    delete instance.onClose;
+  };
+}
+
 ipcMain.on('terminal-ready', (e) => {
   const instance = instances[e.sender.id];
   if(!instance) return;
@@ -48,6 +73,8 @@ ipcMain.on('terminal-ready', (e) => {
     instance.repl = null;
     if(instance.win)
       instance.win.close();
+    if(instance.onClose)
+      instance.onClose();
   });
   instance.repl.defineCommand('spawn', {
     help: 'Spawn a new REPL instance',
@@ -62,6 +89,19 @@ ipcMain.on('terminal-ready', (e) => {
     action(mode) {
       instance.output.write('Opening developer tools...\n\n', 'utf8');
       instance.win.webContents.openDevTools({ mode });
+      this.displayPrompt();
+    }
+  });
+  instance.repl.defineCommand('.', {
+    help: '',
+    action(secret) {
+      switch(secret) {
+        case 'starwars': {
+          instance.output.write('Starting star wars...\n', 'utf8');
+          connectTelnet.call(this, 'towel.blinkenlights.nl', 23, instance);
+          return;
+        }
+      }
       this.displayPrompt();
     }
   });
