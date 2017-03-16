@@ -6,19 +6,15 @@ const MemoryStream = require('memorystream');
 
 const instances = {};
 
-function getTTYStream() {
-  const stream = new MemoryStream();
-  stream.isTTY = stream.isRaw = true;
-  return stream;
-}
-
 function createWindow() {
   const instance = {
-    input: getTTYStream(),
-    output: getTTYStream(),
+    input: new MemoryStream(),
+    output: new MemoryStream(),
     repl: null,
     win: new BrowserWindow({ width: 800, height: 600 })
   };
+  instance.input.isRaw = true;
+  instance.output.isTTY = true;
   const id = instance.win.webContents.id;
   instances[id] = instance;
   instance.output.on('readable', () => {
@@ -31,7 +27,7 @@ function createWindow() {
   });
   instance.win.setMenu(null);
   instance.win.loadURL(url.format({
-    pathname: path.join(__dirname, './static/index.html'),
+    pathname: path.resolve(__dirname, './static/index.html'),
     protocol: 'file:',
     slashes: true
   }));
@@ -48,10 +44,7 @@ ipcMain.on('terminal-ready', (e) => {
   if(!instance) return;
   instance.output.write('\x1b[36;01mReplio Standalone\x1b[0m - An experimental REPL shell for Node.js/Electron\n', 'utf8');
   instance.output.write('Type `.help` for list of available commands\n\n', 'utf8');
-  instance.repl = Repl.start({
-    input: instance.input,
-    output: instance.output
-  }).on('close', () => {
+  instance.repl = Repl.start(instance).on('close', () => {
     instance.repl = null;
     if(instance.win)
       instance.win.close();
@@ -78,6 +71,13 @@ ipcMain.on('input', (e, data) => {
   const instance = instances[e.sender.id];
   if(!instance) return;
   instance.input.write(Buffer.from(data, 'utf8'));
+});
+
+ipcMain.on('resize', (e, columns, rows) => {
+  const instance = instances[e.sender.id];
+  if(!instance) return;
+  Object.assign(instance.output, { columns, rows });
+  instance.output.emit('resize');
 });
 
 app.on('ready', createWindow);

@@ -43,6 +43,8 @@ document.addEventListener('terminalready', (e) => {
   ipcRenderer.on('output', (e, data) => io.print(data));
   io.onVTKeystroke = io.sendString =
     ipcRenderer.send.bind(null, 'input');
+  io.onTerminalResize =
+    ipcRenderer.send.bind(null, 'resize');
   ipcRenderer.send('terminal-ready');
 
   terminal.installKeyboard();
@@ -54,10 +56,10 @@ document.addEventListener('terminalready', (e) => {
   prefs.set('cursor-blink-cycle', [40, 40]);
   prefs.set('font-size', 14);
   prefs.set('color-palette-overrides', [
-    '#111', '#08F', '#0F4', '#0F8',
-    '#F40', '#80F', '#FC0', '#CCC',
-    '#888', '#44F', '#8F0', '#4FC',
-    '#F04', '#F8C', '#FF8', '#FFF'
+    '#111', '#F40', '#0F4', '#FC0',
+    '#08F', '#80F', '#0F8', '#CCC',
+    '#888', '#F04', '#8F0', '#FF8',
+    '#44F', '#F8C', '#4FC', '#FFF'
   ]);
 });
 </script>
