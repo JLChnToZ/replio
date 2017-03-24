@@ -3,6 +3,10 @@ const TerminalHost = require('./lib/termhost');
 const Shell = require('./lib/shellbase');
 const ReplShell = require('./lib/shells/repl');
 const TelnetShell = require('./lib/shells/telnet');
+const ExecShell = require('./lib/shells/exec');
+
+if(process.execPath.indexOf('electron-prebuilt') > -1)
+  require('electron-local-crash-reporter').start();
 
 function createWindow(ShellType) {
   if(!ShellType) ShellType = ReplShell;
@@ -32,6 +36,18 @@ function registerHelperToRepl(shell) {
       this.displayPrompt();
     }
   });
+  shell.repl.defineCommand('exec', {
+    help: 'Execute an external command',
+    action(command) {
+      try {
+        console.log(`Execute ${command}...`);
+        shell.attachedHost.pushShell(new ExecShell(command));
+      } catch(err) {
+        console.log(err.stack || err);
+      }
+      this.displayPrompt();
+    }
+  });
   shell.repl.defineCommand('telnet', {
     help: 'Connect to telnet host',
     action() {
@@ -44,7 +60,7 @@ function registerHelperToRepl(shell) {
       .then(() => new Promise(fufill => this.question('Encoding (utf8): ', fufill)))
       .then(ans => { encoding = ans || 'utf8'; })
       .then(() => {
-        console.log(`Connecting to ${host}:${port} in ${encoding}...`)
+        console.log(`Connecting to ${host}:${port} in ${encoding}...`);
         shell.attachedHost.pushShell(new TelnetShell(host, port, encoding));
         this.displayPrompt();
       })
