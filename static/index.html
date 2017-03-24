@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Replio Standalone - Electron (Node.js) REPL</title>
+<title>hterm Electron Client</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
 <style type="text/css">
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Expose for debugging
   window.terminal = terminal;
 });
-document.addEventListener('terminalready', (e) => {
+document.addEventListener('terminalready', e => {
   const { ipcRenderer } = require('electron');
   const { terminal } = e.detail;
   const io = terminal.io.push();

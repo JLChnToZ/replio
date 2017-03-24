@@ -1,6 +1,6 @@
 {
   "name": "replio-standalone",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Replio.Standalone - An experiment of running Electron (Node.js) REPL with hterm.",
   "main": "index.js",
   "scripts": {
@@ -13,8 +13,9 @@
   "author": "Jeremy Lam \"JLChnToZ\"",
   "license": "MIT",
   "dependencies": {
+    "fibers": "^1.0.15",
     "hterm-umdjs": "^1.1.4",
-    "memorystream": "^0.3.1"
+    "iconv-lite": "^0.4.15"
   },
   "devDependencies": {
     "electron": "^1.4.1"
