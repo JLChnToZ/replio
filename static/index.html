@@ -51,11 +51,11 @@ document.addEventListener('terminalready', e => {
 
   // Decorate the terminal
   const prefs = terminal.getPrefs();
-  prefs.set('cursor-color', '#0F8');
-  prefs.set('cursor-blink', true);
-  prefs.set('cursor-blink-cycle', [40, 40]);
-  prefs.set('font-size', 14);
-  prefs.set('color-palette-overrides', [
+  prefs.changeDefault('cursor-color', '#0F8');
+  prefs.changeDefault('cursor-blink', true);
+  prefs.changeDefault('cursor-blink-cycle', [40, 40]);
+  prefs.changeDefault('font-size', 14);
+  prefs.changeDefault('color-palette-overrides', [
     '#111', '#F40', '#0F4', '#FC0',
     '#08F', '#80F', '#0F8', '#CCC',
     '#888', '#F04', '#8F0', '#FF8',

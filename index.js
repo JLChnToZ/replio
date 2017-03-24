@@ -32,15 +32,23 @@ function registerHelperToRepl(shell) {
       this.displayPrompt();
     }
   });
-  shell.repl.defineCommand('.', {
-    help: '',
-    action(secret) {
-      switch(secret) {
-        case 'starwars': // Nothing but easter eggs
-          new TerminalHost(new TelnetShell('towel.blinkenlights.nl'));
-        break;
-      }
-      this.displayPrompt();
+  shell.repl.defineCommand('telnet', {
+    help: 'Connect to telnet host',
+    action() {
+      let host, port, encoding;
+      Promise
+      .resolve(new Promise(fufill => this.question('Remote Host: ', fufill)))
+      .then(ans => { host = ans || 'localhost'; })
+      .then(() => new Promise(fufill => this.question('Port (23): ', fufill)))
+      .then(ans => { try { port = parseInt(ans) || 23; } catch(e) { port = 23; }})
+      .then(() => new Promise(fufill => this.question('Encoding (utf8): ', fufill)))
+      .then(ans => { encoding = ans || 'utf8'; })
+      .then(() => {
+        console.log(`Connecting to ${host}:${port} in ${encoding}...`)
+        shell.attachedHost.pushShell(new TelnetShell(host, port, encoding));
+        this.displayPrompt();
+      })
+      .catch(err => console.err(err.stack || err));
     }
   });
 }
