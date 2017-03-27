@@ -1,9 +1,9 @@
 const { app } = require('electron');
+const fs = require('fs');
+const path = require('path');
 const TerminalHost = require('./lib/termhost');
 const Shell = require('./lib/shellbase');
 const ReplShell = require('./lib/shells/repl');
-const TelnetShell = require('./lib/shells/telnet');
-const ExecShell = require('./lib/shells/exec');
 
 if(process.execPath.indexOf('electron-prebuilt') > -1)
   require('electron-local-crash-reporter').start();
@@ -36,37 +36,9 @@ function registerHelperToRepl(shell) {
       this.displayPrompt();
     }
   });
-  shell.repl.defineCommand('exec', {
-    help: 'Execute an external command',
-    action(command) {
-      try {
-        console.log(`Execute ${command}...`);
-        shell.attachedHost.pushShell(new ExecShell(command));
-      } catch(err) {
-        console.log(err.stack || err);
-      }
-      this.displayPrompt();
-    }
-  });
-  shell.repl.defineCommand('telnet', {
-    help: 'Connect to telnet host',
-    action() {
-      let host, port, encoding;
-      Promise
-      .resolve(new Promise(fufill => this.question('Remote Host: ', fufill)))
-      .then(ans => { host = ans || 'localhost'; })
-      .then(() => new Promise(fufill => this.question('Port (23): ', fufill)))
-      .then(ans => { try { port = parseInt(ans) || 23; } catch(e) { port = 23; }})
-      .then(() => new Promise(fufill => this.question('Encoding (utf8): ', fufill)))
-      .then(ans => { encoding = ans || 'utf8'; })
-      .then(() => {
-        console.log(`Connecting to ${host}:${port} in ${encoding}...`);
-        shell.attachedHost.pushShell(new TelnetShell(host, port, encoding));
-        this.displayPrompt();
-      })
-      .catch(err => console.err(err.stack || err));
-    }
-  });
+  const commandsPath = './lib/commands';
+  fs.readdirSync(path.join(__dirname, commandsPath))
+  .forEach(file => require(`${commandsPath}/${file}`)(shell));
 }
 
 app.on('ready', createWindow.bind(this, null));
