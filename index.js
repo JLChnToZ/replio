@@ -6,9 +6,6 @@ const TerminalHost = require('./lib/termhost');
 const Shell = require('./lib/shellbase');
 const ReplShell = require('./lib/shells/repl');
 
-if(process.defaultApp)
-  require('electron-local-crash-reporter').start();
-
 if(app.makeSingleInstance((argv, cwd) => createWindow(getArgv(argv), cwd)))
   return app.quit();
 
@@ -65,7 +62,13 @@ function registerHelperToRepl(shell) {
   shells.forEach(s => s.register(shell));
 }
 
-app.on('ready', createWindow.bind(this, getArgv(), process.cwd()));
+const argv = getArgv();
+const cwd = process.cwd();
+const appdataPath = path.resolve(app.getPath('appData'), './replio');
+if(!fs.existsSync(appdataPath)) fs.mkdirSync(appdataPath);
+process.chdir(appdataPath);
+
+app.on('ready', createWindow.bind(this, argv, cwd));
 
 app.on('window-all-closed', () => {
   if(process.platform !== 'darwin')
@@ -74,5 +77,5 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if(ShellHost.count() <= 0)
-    createWindow(getArgv(), process.cwd());
+    createWindow(argv, cwd);
 });
